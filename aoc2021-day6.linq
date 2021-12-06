@@ -1,6 +1,4 @@
-<Query Kind="Statements">
-  <Namespace>System.Numerics</Namespace>
-</Query>
+<Query Kind="Statements" />
 
 long solve(string input, int days)
 {
