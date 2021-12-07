@@ -46,7 +46,19 @@ int solve2(string input)
 	return cost;
 }
 
+int solve2Fast(string input)
+{
+	var crabs = input.Split(",").Select(int.Parse).ToArray();
+	var c = int.MaxValue;
+	for (var i = 0; i < crabs.Length / 2; i++)
+	{
+		c = Math.Min(c, crabs.Sum(cr => Math.Abs(cr - i) * (Math.Abs(cr - i) + 1) / 2));
+	}
+	return c;
+}
+
 var testInput = "16,1,2,0,4,2,7,1,2,14";
 
 solve1(testInput).Dump();
 solve2(testInput).Dump();
+solve2Fast(testInput).Dump();
