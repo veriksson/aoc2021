@@ -35,11 +35,8 @@ int solve2(string input)
 		return c;
 	}
 
-	var max = crabs.Max();
-	var min = crabs.Min();
-
 	var cost = int.MaxValue;
-	for (var i = min; i < max/2; i++)
+	for (var i = 0; i < crabs.Count/2; i++)
 	{
 		cost = Math.Min(cost, crabs.Sum(c => stepCost(c, i)));
 	}
