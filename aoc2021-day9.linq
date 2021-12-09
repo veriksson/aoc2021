@@ -1,15 +1,15 @@
 <Query Kind="Statements" />
 
-IEnumerable<(int x, int y)> neighbours(int x, int y)
+IEnumerable<(int x, int y)> neighbours(int x, int y, int mx, int my)
 {
-
-	yield return (x - 1, y);
-	yield return (x + 1, y);
-	yield return (x, y + 1);
-	yield return (x, y - 1);
-	//yield return (x + 1, y + 1);
-	//yield return (x + 1, y - 1);
-	//yield return (x - 1, y - 1);
+	if (x > 0)
+		yield return (x - 1, y);
+	if (x < mx - 1)
+		yield return (x + 1, y);
+	if (y > 0)
+		yield return (x, y - 1);
+	if (y < my - 1)
+		yield return (x, y + 1);
 }
 
 int[,] genMap(List<string> input)
@@ -27,9 +27,9 @@ int[,] genMap(List<string> input)
 	}
 	return map;
 }
+
 int solve1(List<string> input)
 {
-
 	var map = genMap(input);
 	var mx = map.GetLength(1);
 	var my = map.GetLength(0);
@@ -39,8 +39,7 @@ int solve1(List<string> input)
 	{
 		for (var y = 0; y < my; y++)
 		{
-			if (neighbours(x, y)
-				.Where(p => p.x > -1 && p.x < mx && p.y > -1 && p.y < my)
+			if (neighbours(x, y, mx, my)
 				.Select(p => map[p.y, p.x]).All(v => v > map[y, x]))
 			{
 				risk += (1 + map[y, x]);
@@ -50,123 +49,45 @@ int solve1(List<string> input)
 	return risk;
 }
 
-
 int solve2(List<string> input)
 {
 	var map = genMap(input);
 	var mx = map.GetLength(1);
 	var my = map.GetLength(0);
-	var lowPoints = new List<(int x, int y, int v)>();
+	
+	var lowPoints = new List<(int x, int y)>();
 
 	for (var x = 0; x < mx; x++)
 	{
 		for (var y = 0; y < my; y++)
 		{
-			if (neighbours(x, y)
-				.Where(p => p.x > -1 && p.x < mx && p.y > -1 && p.y < my)
+			if (neighbours(x, y, mx, my)
 				.Select(p => map[p.y, p.x]).All(v => v > map[y, x]))
 			{
-				lowPoints.Add((x, y, map[y, x]));
+				lowPoints.Add((x, y));
 			}
 		}
 	}
 
-	IEnumerable<(int x, int y)> spread(int x, int y, int v)
+	var basins = lowPoints.Select(lp => genBasin(map, lp.x, lp.y));
+	var top3 = basins.Select(b => b.Distinct().Count()).OrderByDescending(b => b).Take(3);
+
+	return top3.Aggregate(1, (curr, next) => curr * next);
+}
+
+List<(int x, int y)> genBasin(int[,] map, int x, int y)
+{
+	var basin = new List<(int, int)>()
 	{
-		yield return (x, y);
-		var mn = neighbours(x, y)
-				.Where(p => p.x > -1 && p.x < mx && p.y > -1 && p.y < my && map[p.y, p.x] - 1 == v && map[p.y, p.x] != 9);
-		if (!mn.Any())
-			yield break;
+		(x,y)
+	};
 
-		foreach (var n in mn)
-		{
-			var nn = spread(n.x, n.y, map[n.y, n.x]);
-			foreach (var nnn in nn)
-				yield return nnn;
-		}
-	}
-
-	var basins = new List<List<(int x, int y)>>();
-	int[,] marked = new int[my, mx];
-	foreach (var point in lowPoints)
+	var ns = neighbours(x, y, map.GetLength(1), map.GetLength(0)).Where(p => map[p.y, p.x] > map[y, x] && map[p.y, p.x] != 9);
+	foreach (var n in ns)
 	{
-		var n = spread(point.x, point.y, point.v);
-
-		basins.Add(n.Distinct().ToList());
+		basin.AddRange(genBasin(map, n.x, n.y));
 	}
-	$"Number of basins: {basins.Count()}".Dump();
-
-
-	//List<List<(int x, int y)>> join(List<List<(int x, int y)>> bs)
-	//{
-	//	var joined = new List<List<(int x, int y)>>();
-	//	joined.Add(basins.First().ToList());
-	//	foreach (var basin in basins.Skip(1))
-	//	{
-	//		bool added = false;
-	//		foreach (var j in joined)
-	//		{
-	//			if (basin.Any(p => j.Contains(p)))
-	//			{
-	//				j.AddRange(basin);
-	//				added = true;
-	//				break;
-	//			}
-	//		}
-	//		if (!added)
-	//		{
-	//			joined.Add(basin.ToList());
-	//		}
-	//	}
-	//	return joined.Select(j => j.Distinct().ToList()).ToList();
-	//}
-	//while (true)
-	//{
-	//	var currentCount = basins.Count;
-	//	basins = join(basins);
-	//	var newCount = basins.Count();
-	//	if (newCount == currentCount)
-	//		break;
-	//}
-	//
-	//foreach (var basin in basins)
-	//{
-	//	foreach (var p in basin)
-	//	{
-	//		marked[p.y, p.x]++;
-	//	}
-	//}
-	var b = new System.Drawing.Bitmap(mx, my);
-	using (var graphics = System.Drawing.Graphics.FromImage(b))
-	{
-		graphics.Clear(System.Drawing.Color.DarkRed);
-	}
-
-	foreach (var basin in basins)
-	{
-
-		foreach (var p in basin)
-		{
-			b.SetPixel(p.x, p.y, System.Drawing.Color.Blue);
-		}
-	}
-	//marked.Dump();
-
-	var biggest = basins.OrderByDescending(j => j.Count).Take(3);
-	
-	foreach (var basin in biggest)
-	{
-
-		foreach (var p in basin)
-		{
-			b.SetPixel(p.x, p.y, System.Drawing.Color.DarkCyan);
-			//marked[p.y, p.x]++;//= map[p.y,p.x];
-		}
-	}
-	b.Dump();
-
-	return biggest.Select(b => b.Count).Aggregate(1, (c, n) => c * n);
+	return basin;
 }
 
 var testInput = new List<string>(){
@@ -176,10 +97,6 @@ var testInput = new List<string>(){
 	"8767896789",
 	"9899965678",
 };
-//
+
 solve1(testInput).Dump();
 solve2(testInput).Dump();
-
-var realInput = File.ReadAllLines(@"C:\Users\gdh1c\Desktop\aoc2021_day9").ToList();
-solve1(realInput).Dump();
-solve2(realInput).Dump();
