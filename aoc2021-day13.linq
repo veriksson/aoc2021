@@ -1,19 +1,19 @@
 <Query Kind="Statements" />
 
-(bool[,], (string direction, int where)[]) parseMap(List<string> input)
+(bool[,], (string direction, int at)[]) parse(List<string> input)
 {
-	var folds = input.SkipWhile(l => l != "").Skip(1).Select(l =>
-	{
-		var parts = l.Split().Last().Split("=");
-		return (parts.First(), int.Parse(parts.Last()));
-	}).ToArray();
-
 
 	var dots = input.TakeWhile(l => l != "").Select(l =>
 	{
 		var parts = l.Split(",");
 		return (int.Parse(parts[0]), int.Parse(parts[1]));
 	}).ToArray();
+
+	var folds = input.SkipWhile(l => l != "").Skip(1).Select(l =>
+		{
+			var parts = l.Split().Last().Split("=");
+			return (parts.First(), int.Parse(parts.Last()));
+		}).ToArray();
 
 	// figure out biggest fold to get width & height, since folds are always
 	// in the middle of the "paper".
@@ -31,38 +31,32 @@
 void copyh(bool[,] map1, bool[,] map2)
 {
 	var m1y = map1.GetLength(0) - 1;
-	for (int y = 0; y < map2.GetLength(0); y++)
+	map2.Iterate((y, x, _) =>
 	{
-		for (int x = 0; x < map2.GetLength(1); x++)
-		{
-			map2[y, x] = map1[y, x] | map1[m1y - y, x];
-		}
-	}
+		map2[y, x] = map1[y, x] | map1[m1y - y, x];
+	});
 }
 
 void copyw(bool[,] map1, bool[,] map2)
 {
 	var m1x = map1.GetLength(1) - 1;
-	for (int y = 0; y < map2.GetLength(0); y++)
+	map2.Iterate((y, x, _) =>
 	{
-		for (int x = 0; x < map2.GetLength(1); x++)
-		{
-			map2[y, x] = map1[y, x] | map1[y, m1x - x];
-		}
-	}
+		map2[y, x] = map1[y, x] | map1[y, m1x - x];
+	});
 }
 
-bool[,] fold(bool[,] map, string dir, int where)
+bool[,] fold(bool[,] map, (string dir, int at) fold)
 {
 	bool[,] folded = null;
-	switch (dir)
+	switch (fold.dir)
 	{
 		case "y":
-			folded = new bool[where, map.GetLength(1)];
+			folded = new bool[fold.at, map.GetLength(1)];
 			copyh(map, folded);
 			break;
 		case "x":
-			folded = new bool[map.GetLength(0), where];
+			folded = new bool[map.GetLength(0), fold.at];
 			copyw(map, folded);
 			break;
 	}
@@ -72,9 +66,8 @@ bool[,] fold(bool[,] map, string dir, int where)
 
 int solve1(List<string> input)
 {
-	var (map, folds) = parseMap(input);
-	var firstFold = folds.First();
-	var folded = fold(map, firstFold.direction, firstFold.where);
+	var (map, folds) = parse(input);
+	var folded = fold(map, folds.First());
 	var dotCount = 0;
 	foreach (var element in folded)
 		if (element) dotCount++;
@@ -85,8 +78,8 @@ int solve1(List<string> input)
 
 void solve2(List<string> input)
 {
-	var (map, folds) = parseMap(input);
-	folds.Aggregate(map, (c, n) => fold(c, n.direction, n.where)).Draw(scale: 10);
+	var (map, folds) = parse(input);
+	folds.Aggregate(map, fold).Draw();
 }
 
 var testInput = new List<string>() {
