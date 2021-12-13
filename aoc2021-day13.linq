@@ -94,8 +94,6 @@ int solve1(List<string> input)
 void solve2(List<string> input)
 {
 	var folds = parseFolds(input);
-	var firstFold = folds.First();
-
 	var map = parseMap(input);
 	folds.Aggregate(map, (c, n) => fold(c, n.direction, n.where)).Draw(scale: 10);
 }
