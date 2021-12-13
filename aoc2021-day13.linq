@@ -12,8 +12,8 @@ bool[,] parseMap(List<string> input)
 
 	// figure out biggest fold to get width & height, since folds are always
 	// in the middle of the "paper".
-	var maxX = 1 + folds.Where(f => f.kind == "x").MaxBy(f => f.where).where * 2;
-	var maxY = 1 + folds.Where(f => f.kind == "y").MaxBy(f => f.where).where * 2;
+	var maxX = 1 + folds.Where(f => f.direction == "x").Select(f => f.where).Max() * 2;
+	var maxY = 1 + folds.Where(f => f.direction == "y").Select(f => f.where).Max() * 2;
 	var map = new bool[maxY, maxX];
 
 	foreach (var d in dots)
@@ -23,7 +23,7 @@ bool[,] parseMap(List<string> input)
 	return map;
 }
 
-List<(string kind, int where)> parseFolds(List<string> input)
+List<(string direction, int where)> parseFolds(List<string> input)
 {
 	var folds = input.SkipWhile(l => l != "").Skip(1).Select(l =>
 	{
@@ -79,15 +79,14 @@ bool[,] fold(bool[,] map, string dir, int where)
 int solve1(List<string> input)
 {
 	var folds = parseFolds(input);
-	var firstFold = folds.First();
 
 	var map = parseMap(input);
-
-	var folded = fold(map, firstFold.kind, firstFold.where);
+	var firstFold = folds.First();
+	var folded = fold(map, firstFold.direction, firstFold.where);
 	var dotCount = 0;
 	foreach (var element in folded)
 		if (element) dotCount++;
-		
+
 	return dotCount;
 
 }
@@ -98,7 +97,7 @@ void solve2(List<string> input)
 	var firstFold = folds.First();
 
 	var map = parseMap(input);
-	folds.Aggregate(map, (c, n) => fold(c, n.kind, n.where)).Draw(scale: 10);
+	folds.Aggregate(map, (c, n) => fold(c, n.direction, n.where)).Draw(scale: 10);
 }
 
 var testInput = new List<string>() {
