@@ -1,8 +1,13 @@
 <Query Kind="Statements" />
 
-bool[,] parseMap(List<string> input)
+(bool[,], (string direction, int where)[]) parseMap(List<string> input)
 {
-	var folds = parseFolds(input);
+	var folds = input.SkipWhile(l => l != "").Skip(1).Select(l =>
+	{
+		var parts = l.Split().Last().Split("=");
+		return (parts.First(), int.Parse(parts.Last()));
+	}).ToArray();
+
 
 	var dots = input.TakeWhile(l => l != "").Select(l =>
 	{
@@ -12,26 +17,15 @@ bool[,] parseMap(List<string> input)
 
 	// figure out biggest fold to get width & height, since folds are always
 	// in the middle of the "paper".
-	var maxX = 1 + folds.Where(f => f.direction == "x").Select(f => f.where).Max() * 2;
-	var maxY = 1 + folds.Where(f => f.direction == "y").Select(f => f.where).Max() * 2;
+	var maxX = 1 + folds.Where(f => f.Item1 == "x").Select(f => f.Item2).Max() * 2;
+	var maxY = 1 + folds.Where(f => f.Item1 == "y").Select(f => f.Item2).Max() * 2;
 	var map = new bool[maxY, maxX];
 
 	foreach (var d in dots)
 	{
 		map[d.Item2, d.Item1] = true;
 	}
-	return map;
-}
-
-List<(string direction, int where)> parseFolds(List<string> input)
-{
-	var folds = input.SkipWhile(l => l != "").Skip(1).Select(l =>
-	{
-		var parts = l.Split().Last().Split("=");
-		return (parts.First(), int.Parse(parts.Last()));
-	}).ToList();
-
-	return folds;
+	return (map, folds);
 }
 
 void copyh(bool[,] map1, bool[,] map2)
@@ -78,9 +72,7 @@ bool[,] fold(bool[,] map, string dir, int where)
 
 int solve1(List<string> input)
 {
-	var folds = parseFolds(input);
-
-	var map = parseMap(input);
+	var (map, folds) = parseMap(input);
 	var firstFold = folds.First();
 	var folded = fold(map, firstFold.direction, firstFold.where);
 	var dotCount = 0;
@@ -93,8 +85,7 @@ int solve1(List<string> input)
 
 void solve2(List<string> input)
 {
-	var folds = parseFolds(input);
-	var map = parseMap(input);
+	var (map, folds) = parseMap(input);
 	folds.Aggregate(map, (c, n) => fold(c, n.direction, n.where)).Draw(scale: 10);
 }
 
