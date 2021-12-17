@@ -141,7 +141,6 @@ IEnumerable<Packet> parsePackets(string bin)
 	var bin = binaryString(input);
 	var packet = parsePackets(bin).First();
 
-	//packets.Dump();
 	return (packet.version, packet.value);
 }
 
