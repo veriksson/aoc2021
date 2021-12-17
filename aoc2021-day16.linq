@@ -124,22 +124,10 @@ bool zeroes(string bin) => bin.All(c => c == '0');
 	}
 }
 
-IEnumerable<Packet> parsePackets(string bin)
-{
-	bool more() => !zeroes(bin);
-
-	do
-	{
-		(bin, var packet) = next(bin);
-		yield return packet;
-	} while (more());
-}
-
-
 (long, long) solve(string input)
 {
 	var bin = binaryString(input);
-	var packet = parsePackets(bin).First();
+	(bin, var packet) = next(bin);
 
 	return (packet.version, packet.value);
 }
