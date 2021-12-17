@@ -23,114 +23,95 @@ var directions = new (int y, int x)[]{
 	(0,-1)
 };
 
-int dfs(int[,] map, (int y, int x) current, (int y, int x) end, HashSet<(int y, int x)> visited, int min)
+Dictionary<(int y, int x), long> djikstra(int[,] map, (int y, int x) start, (int y, int x) end)
 {
-	foreach (var d in directions)
+	var q = new PriorityQueue<(int y, int x), long>();
+	var dist = new Dictionary<(int y, int x), long>();
+
+	var my = map.GetLength(0);
+	var mx = map.GetLength(1);
+	for (var y = 0; y < my; y++)
 	{
-		(int y, int x) next = (current.y + d.y, current.x + d.x);
-
-		if (next == end)
+		for (var x = 0; x < mx; x++)
 		{
-			var count = visited.Select(step => map[step.y, step.x]).Sum();
-			return count + map[next.y, next.x];
+			if ((y, x) == start) continue;
+			dist[(y, x)] = long.MaxValue;
+			q.Enqueue((y, x), dist[(y, x)]);
 		}
-
-		if (visited.Contains(next))
-			continue;
-
-		if ((next.y < 0 || next.y >= map.GetLength(0)) || (next.x < 0 || next.x >= map.GetLength(1)))
-		{
-			// out of bounds
-			continue;
-		}
-
-
-		visited.Add(current);
-		var c = dfs(map, next, end, new HashSet<(int, int)>(visited), min);
-		if (c > 0 && c < min)
-		{
-			min = c;
-		}
-		visited.Remove(current);
 	}
 
-	return min;
-}
-
-(Dictionary<(int y, int x), long>, Dictionary<(int y, int x), (int y, int x)>) djikstra(int[,] map, (int y, int x) start, (int y, int x) end)
-{
-	var set = new HashSet<(int y, int x)>();
-	var dist = new Dictionary<(int y, int x), long>();
-	var prev = new Dictionary<(int y, int x), (int y, int x)>();
-	map.Iterate((y, x, _) =>
-	{
-		dist[(y, x)] = long.MaxValue;
-		set.Add((y, x));
-	});
-
 	dist[start] = 0;
-
-	while (set.Count() > 0)
+	q.Enqueue(start, 0);
+	while (q.Count > 0)
 	{
-		var s = set.MinBy(ss => dist[ss]);
-		set.Remove(s);
+		var s = q.Dequeue();
 		foreach (var d in directions)
 		{
 			(int y, int x) next = (s.y + d.y, s.x + d.x);
-			if (!set.Contains(next)) continue;
-			var alt = dist[s] + map[next.y, next.x];
-			if (alt < dist[next])
+			if (next.y < 0 || next.y > my - 1) continue;
+			if (next.x < 0 || next.x > mx - 1) continue;
+
+			var newDist = dist[s] + map[next.y, next.x];
+			if (newDist < dist[next])
 			{
-				dist[next] = alt;
-				prev[next] = s;
+				dist[next] = newDist;
+				q.Enqueue(next, newDist);
 			}
 		}
 	}
-	return (dist, prev);
+	return dist;
 }
 
-bool inBounds(int[,] map, (int y, int x) coord)
-{
-	var my = map.GetLength(0);
-	var mx = map.GetLength(1);
-	return coord.y > -1 && coord.y < my && coord.x > -1 && coord.x < mx;
-}
-
-HashSet<(int y, int x)> stupidSolve(int[,] map, (int y, int x) start, (int y, int x) end)
-{
-	var visited = new HashSet<(int, int)>();
-	visited.Add(start);
-	while (start != end)
-	{
-		//var next = directions.Select(
-	}
-	return visited;
-}
-
-int solve1(List<string> input)
+long solve1(List<string> input)
 {
 	var map = parse(input);
-	var visited = new HashSet<(int y, int x)>();
-
 	(int y, int x) start = (0, 0);
 	(int y, int x) end = (map.GetLength(1) - 1, map.GetLength(0) - 1);
-	var count = djikstra(map, start, end);
-	//count -= map[start.y, start.x];
-	//count += map[end.y, end.x];
-	//var cs = paths.Select(steps => (steps, steps.Select(step => map[step.y, step.x]).Sum())).MinBy(k => k.Item2);
-	//foreach (var k in visited)
-	//{
-	//	map[k.y, k.x] = 10;
-	//}
-	map.Dump();
-	//map.Draw();
-
-	return (int)count.Item1[end];
+	var distances = djikstra(map, start, end);
+	return distances[end];
 }
 
-int solve2(List<string> input)
+int[,] expand(int[,] map)
 {
-	return 2;
+	var origy = map.GetLength(0);
+	var origx = map.GetLength(1);
+	int col = 0, row = 0, vx = 0, vy = 0;
+	var expanded = new int[origy * 5, origx * 5];
+	for (var y = 0; y < expanded.GetLength(0); y++)
+	{
+		for (var x = 0; x < expanded.GetLength(1); x++)
+		{
+			var yy = y % origy;
+			var xx = x % origx;
+			expanded[y, x] = (map[yy, xx] + vx + vy);
+			if (expanded[y, x] > 9)
+				expanded[y, x] -= 9;
+
+			if (++col == origx)
+			{
+				vx++;
+				col = 0;
+			}
+		}
+		col = 0;
+		vx = 0;
+		if (++row == origy)
+		{
+			row = 0;
+			vy++;
+		}
+	}
+
+	return expanded;
+}
+
+long solve2(List<string> input)
+{
+	var map = expand(parse(input));
+	(int y, int x) start = (0, 0);
+	(int y, int x) end = (map.GetLength(1) - 1, map.GetLength(0) - 1);
+	var distances = djikstra(map, start, end);
+	return distances[end];
 }
 
 var testInput = new List<string>() {
@@ -147,15 +128,4 @@ var testInput = new List<string>() {
 };
 
 solve1(testInput).Dump();
-//solve2(testInput).Dump();
-
-var smallInput = new List<string>() {
-	"116",
-	"138",
-	"213",
-};
-solve1(smallInput).Dump();
-
-var real = File.ReadAllLines(@"C:\Users\gdh1c\Desktop\aoc2021_day15").ToList();
-
-solve1(real).Dump();
+solve2(testInput).Dump();
